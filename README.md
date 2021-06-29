@@ -1,70 +1,168 @@
-# Getting Started with Create React App
+# REDUX-THUNK BASIC MODULE
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Available Scripts
 
-In the project directory, you can run:
+## Description
 
-### `yarn start`
+- Redux 에서 비동기 로직을 구현하기
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- 컴포넌트 첫 렌더링 이후 data를  fetch 하여 store에 저장합니다.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+- 테스트 URL: https://jsonplaceholder.typicode.com/todos
 
-### `yarn test`
+  
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Require package
 
-### `yarn build`
+- npm install react-redux 
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- npm install redux
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- npm install redux-thunk
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+  
 
-### `yarn eject`
+## Setting
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+#### index.js
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+~~~js
+import React from 'react';
+import ReactDOM from 'react-dom';
+import {combineReducers,createStore,applyMiddleware} from 'redux'
+import {Provider} from 'react-redux';
+import thunk from 'redux-thunk';
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+import './index.css';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+import todoReducer from './store/reducer';
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+const rootReducer = combineReducers({
+  schedule: todoReducer,
+});
+const store = createStore(rootReducer,applyMiddleware(thunk));
 
-## Learn More
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>
+    
+  ,
+  document.getElementById('root')
+);
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+reportWebVitals();
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+~~~
 
-### Code Splitting
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
 
-### Analyzing the Bundle Size
+#### reducer.js
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+~~~js
+const initialState = {
+    todos:[],
+};
 
-### Making a Progressive Web App
+const todoReducer = (state=initialState,action) => {
+    switch(action.type){
+        case 'LOADTODO':
+            return {
+                todos: action.payload
+            }
+        default:
+             return state
+    }
+}
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+export default todoReducer;
+~~~
 
-### Advanced Configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
-### Deployment
+#### action.js
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+~~~js
+export const loadTodo = (todos) => {
+    return {
+        type:'LOADTODO',
+        payload:todos       
+    }
+}
+~~~
 
-### `yarn build` fails to minify
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+#### lib/api.js (Async처리 코드)
+
+~~~js
+import {loadTodo} from '../store/action';
+
+export function getData() {
+    return async(dispatch)=>{
+        
+        const sendRequest = async() => {
+            const response = await fetch('https://jsonplaceholder.typicode.com/todos');
+            const data = await response.json();  
+            return data;
+        };
+
+        const data = await sendRequest();
+        dispatch(loadTodo(data));
+        
+    }
+}
+~~~
+
+
+
+#### App.js
+
+~~~js
+import logo from './logo.svg';
+import './App.css';
+import {getData} from './lib/api';
+
+import {useEffect} from 'react';
+import {useSelector,useDispatch} from 'react-redux';
+function App() {
+
+  const dispatch = useDispatch();
+  const todos = useSelector(state => state.schedule.todos);
+
+  useEffect(()=>{
+    dispatch(getData());
+  },[]);
+
+  if(todos.length == 0){
+    return <p>is Empty.....</p>
+  }
+  
+  return (
+    <div className="App">
+      {todos.map((todo)=>{
+        return (
+            <p key={todo.id}>{todo.title}</p>
+          )
+      })}
+    </div>
+  );
+}
+
+export default App;
+
+~~~
+
+- redux-thunk에 의해 dispatch(getData()) 사용이 가능함.
+
+  Action객체가 아닌 함수를 리턴하고 해당함수에  dispatch를 전달해줌
+
+
+
+## 참고 
+
+👇 redux-thunk 개념&컨셉
+
+> https://github.com/reduxjs/redux-thunk#installation
+
